@@ -15,7 +15,8 @@ def generate_launch_description():
                 'publish_tf': False, # EKF will handle TF
                 'base_frame_id': 'base_footprint',
                 'odom_frame_id': 'odom',
-                'freq': 10.0
+                'freq': 10.0,
+                'qos_reliability': 1 # 1 = RELIABLE, to match YB_Car_Node
             }],
         ),
     ])

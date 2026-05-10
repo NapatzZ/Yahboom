@@ -19,10 +19,15 @@ ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
     pip install -r requirements.txt
     ```
 *   **ROS 2 Packages**:
-    *   `nav2-map-server`
-    *   `robot-localization`
-    *   `slam-toolbox`
-    *   `rmw-cyclonedds-cpp`
+    Install essential packages:
+    ```bash
+    sudo apt update
+    sudo apt install ros-humble-robot-localization \
+                     ros-humble-slam-toolbox \
+                     ros-humble-navigation2 \
+                     ros-humble-nav2-bringup \
+                     ros-humble-rmw-cyclonedds-cpp
+    ```
 
 ## 1. Installation & Setup
 
