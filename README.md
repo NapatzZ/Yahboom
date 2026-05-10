@@ -7,8 +7,6 @@ ROS 2 project for Yahboom robots.
 ```bash
 # Clone the repository with submodules
 git clone --recursive https://github.com/NapatzZ/Yahboom.git
-# Or if already cloned:
-git submodule update --init --recursive
 
 # Install dependencies (Optional but recommended)
 rosdep update && rosdep install --from-paths src --ignore-src -y
@@ -17,20 +15,11 @@ rosdep update && rosdep install --from-paths src --ignore-src -y
 colcon build --symlink-install
 source install/setup.bash
 
-# Build Micro-ROS Agent (If not using Docker)
-ros2 run micro_ros_setup create_agent_ws.sh
-ros2 run micro_ros_setup build_agent.sh
 ```
 
 ## How to Run (Execution)
 
-### 1. Bringup (Basic Operations)
-Run this command to start sensors and robot description:
-```bash
-ros2 launch yahboom_bringup native_bringup.launch.py
-```
-
-### 2. Micro-ROS Agent
+### 1. Micro-ROS Agent
 The robot communicates with the computer via Micro-ROS.
 
 **Option A: Docker (Recommended)**
@@ -54,6 +43,11 @@ The robot communicates with the computer via Micro-ROS.
     ```bash
     ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyUSB0 -b 921600
     ```
+### 2. Bringup 
+Run this command to start sensors and robot description:
+```bash
+ros2 launch yahboom_bringup native_bringup.launch.py
+```
 
 ### 3. Mapping (SLAM)
 Run navigation using a saved map:
