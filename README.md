@@ -1,4 +1,5 @@
-# Yahboom ROS 2 Project (Rookie 2025)
+# Yahboom ROS 2 Project 
+![ROS2](https://img.shields.io/badge/ROS2-Humble-blue)
 
 ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
 
@@ -28,12 +29,10 @@ ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
 ### Clone and Build
 ```bash
 # Clone with submodules
-git clone --recursive <repository_url>
-
-# Update submodules if already cloned
-git submodule update --init --recursive
+git clone --recursive https://github.com/NapatzZ/Yahboom.git
 
 # Install dependencies
+cd Yahboom
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
 
@@ -59,7 +58,27 @@ source install/setup.bash
 
 ---
 
-## 2. Execution Workflow
+## 2. Robot Configuration (WiFi & IP)
+
+To fetch new WiFi settings or update the Agent IP on the robot hardware:
+
+1. Connect the robot via USB.
+2. Open `src/script/robot_config.py`.
+3. Modify the `if __name__ == '__main__':` block with your new settings:
+   ```python
+   robot.set_wifi_config("YOUR_SSID", "YOUR_PASSWORD")
+   robot.set_udp_config([192, 168, 1, 100], 8090) # Your Computer IP
+   ```
+4. Run the configuration script:
+   ```bash
+   python3 src/script/robot_config.py
+   ```
+5. Reboot the robot.
+
+---
+
+
+## 3. Execution Workflow
 
 ### Step 1: Micro-ROS Agent
 Connect the robot and start the communication bridge.
@@ -108,32 +127,4 @@ ros2 launch yahboom_nav2 navigate.launch.py
 
 ---
 
-## 3. Robot Configuration (WiFi & IP)
 
-To fetch new WiFi settings or update the Agent IP on the robot hardware:
-
-1. Connect the robot via USB.
-2. Open `src/script/robot_config.py`.
-3. Modify the `if __name__ == '__main__':` block with your new settings:
-   ```python
-   robot.set_wifi_config("YOUR_SSID", "YOUR_PASSWORD")
-   robot.set_udp_config([192, 168, 1, 100], 8090) # Your Computer IP
-   ```
-4. Run the configuration script:
-   ```bash
-   python3 src/script/robot_config.py
-   ```
-5. Reboot the robot.
-
----
-
-## 4. Behavior Tree Setup (Optional)
-If you need BehaviorTree support:
-```bash
-cd src
-git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
-git clone https://github.com/BehaviorTree/BehaviorTree.ROS2.git
-cd ..
-rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install
-```
