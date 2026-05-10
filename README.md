@@ -7,12 +7,10 @@ ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
 ### Clone and Build
 ```bash
 # Clone with submodules
-git clone --recursive <repository_url>
-
-# Update submodules if already cloned
-git submodule update --init --recursive
+git clone --recursive https://github.com/NapatzZ/Yahboom.git
 
 # Install dependencies
+cd Yahboom
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
 
@@ -106,13 +104,3 @@ To fetch new WiFi settings or update the Agent IP on the robot hardware:
 
 ---
 
-## 4. Behavior Tree Setup (Optional)
-If you need BehaviorTree support:
-```bash
-cd src
-git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
-git clone https://github.com/BehaviorTree/BehaviorTree.ROS2.git
-cd ..
-rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install
-```
