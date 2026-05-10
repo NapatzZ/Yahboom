@@ -1,4 +1,5 @@
-# Yahboom ROS 2 Project (Rookie 2025)
+# Yahboom ROS 2 Project 
+![ROS2](https://img.shields.io/badge/ROS2-Humble-blue)
 
 ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
 
