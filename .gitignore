@@ -1,1 +1,22 @@
-pixi*
+# ROS 2
+install/
+build/
+log/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Pixi
+.pixi/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
