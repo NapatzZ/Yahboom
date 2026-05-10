@@ -1,0 +1,5 @@
+# Python Dependencies
+pyserial
+opencv-python
+numpy
+setuptools

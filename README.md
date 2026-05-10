@@ -2,6 +2,27 @@
 
 ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
 
+## 0. Requirements
+
+### Hardware
+*   **Yahboom Robot**: Yahboom ESP32.
+*   **LiDAR**: for SLAM and Navigation.
+*   **Computer**: Ubuntu 22.04 recommended.
+
+### Software
+*   **OS**: Ubuntu 22.04 (Jammy Jellyfish)
+*   **ROS 2**: Humble Hawksbill
+*   **Docker**: For running Micro-ROS agent (optional if using native).
+*   **Python Libraries**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+*   **ROS 2 Packages**:
+    *   `nav2-map-server`
+    *   `robot-localization`
+    *   `slam-toolbox`
+    *   `rmw-cyclonedds-cpp`
+
 ## 1. Installation & Setup
 
 ### Clone and Build
