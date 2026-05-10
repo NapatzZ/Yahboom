@@ -6,7 +6,7 @@ ROS 2 project for Yahboom robots.
 
 ```bash
 # Clone the repository with submodules
-git clone --recursive <repository_url>
+git clone --recursive https://github.com/NapatzZ/Yahboom.git
 # Or if already cloned:
 git submodule update --init --recursive
 
