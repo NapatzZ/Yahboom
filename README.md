@@ -5,11 +5,21 @@ ROS 2 project for Yahboom robots.
 ## Installation (Build)
 
 ```bash
+# Clone the repository with submodules
+git clone --recursive <repository_url>
+# Or if already cloned:
+git submodule update --init --recursive
+
+# Install dependencies (Optional but recommended)
+rosdep update && rosdep install --from-paths src --ignore-src -y
+
 # Compile project
 colcon build --symlink-install
-
-# Source workspace
 source install/setup.bash
+
+# Build Micro-ROS Agent (If not using Docker)
+ros2 run micro_ros_setup create_agent_ws.sh
+ros2 run micro_ros_setup build_agent.sh
 ```
 
 ## How to Run (Execution)
@@ -20,47 +30,32 @@ Run this command to start sensors and robot description:
 ros2 launch yahboom_bringup native_bringup.launch.py
 ```
 
-### 2. Mapping (SLAM)
-Start the mapping process:
-```bash
-ros2 launch yahboom_nav2 mapping.launch.py
-```
+### 2. Micro-ROS Agent
+The robot communicates with the computer via Micro-ROS.
 
-### 3. Save Map
-Save the generated map to the default path:
-```bash
-ros2 run yahboom_nav2 map_saver
-```
+**Option A: Docker (Recommended)**
 
-### 4. Micro-ROS Agent
-The robot communicates with the computer via Micro-ROS. You need to start the agent:
+*   **WIFI-UDP:**
+    ```bash
+    docker run -it --rm -v /dev:/dev -v /dev/shm:/dev/shm --privileged --net=host microros/micro-ros-agent:humble udp4 --port 8090 -v4
+    ```
+*   **USB Serial:**
+    ```bash
+    docker run -it --rm -v /dev:/dev -v /dev/shm:/dev/shm --privileged --net=host microros/micro-ros-agent:humble serial --dev /dev/ttyUSB0 -b 921600 -v4
+    ```
 
-**For WIFI-UDP (Standard):**
-```bash
-# Using script
-./src/script/start_agent_computer.sh
+**Option B: Native Built-in Agent**
 
-# Or using Docker directly
-docker run -it --rm --net=host microros/micro-ros-agent:humble udp4 --port 8090
-```
+*   **WIFI-UDP:**
+    ```bash
+    ros2 run micro_ros_agent micro_ros_agent udp4 --port 8090
+    ```
+*   **USB Serial:**
+    ```bash
+    ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyUSB0 -b 921600
+    ```
 
-**For Serial (USB):**
-```bash
-docker run -it --rm --privileged -v /dev:/dev microros/micro-ros-agent:humble serial --dev /dev/ttyUSB0 -b 921600
-```
-
-## Robot Configuration (Flash/Setup)
-
-To configure the robot's Wi-Fi, IP, or PID parameters, use the `robot_config.py` script:
-
-1. Connect the robot to your computer via USB.
-2. Edit the configuration in `src/script/robot_config.py` (inside the `if __name__ == '__main__':` block).
-3. Run the script:
-```bash
-python3 src/script/robot_config.py
-```
-
-### 5. Navigation
+### 3. Mapping (SLAM)
 Run navigation using a saved map:
 ```bash
 ros2 launch yahboom_nav2 navigate.launch.py
