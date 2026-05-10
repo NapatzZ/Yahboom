@@ -9,6 +9,7 @@ ROS 2 project for Yahboom robots, including Micro-ROS, SLAM, and Navigation.
 *   **Yahboom Robot**: Yahboom ESP32.
 *   **LiDAR**: for SLAM and Navigation.
 *   **Computer**: Ubuntu 22.04 recommended.
+*   **Docker**: for run micro-ros connection
 
 ### Software
 *   **OS**: Ubuntu 22.04 (Jammy Jellyfish)
