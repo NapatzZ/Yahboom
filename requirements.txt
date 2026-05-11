@@ -3,3 +3,5 @@ pyserial
 opencv-python
 numpy
 setuptools
+mediapipe
+pyyaml

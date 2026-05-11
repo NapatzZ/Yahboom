@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Allow local root to access X server for GUI support
-xhost +local:root
+xhost +
 
 # Run the container with GUI, USB, and privileged access
 docker run -it --rm \

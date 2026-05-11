@@ -19,20 +19,6 @@ ROS 2 project for Yahboom ESP32 robots, including Micro-ROS, SLAM, and Navigatio
 *   **OS**: Ubuntu 22.04 (Jammy Jellyfish)
 *   **ROS 2**: Humble Hawksbill
 *   **Docker**: For running Micro-ROS agent (optional if using native).
-*   **Python Libraries**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-*   **ROS 2 Packages**:
-    Install essential packages:
-    ```bash
-    sudo apt update
-    sudo apt install ros-humble-robot-localization \
-                     ros-humble-slam-toolbox \
-                     ros-humble-navigation2 \
-                     ros-humble-nav2-bringup \
-                     ros-humble-rmw-cyclonedds-cpp
-    ```
 
 ## 1. Installation & Setup
 
@@ -46,7 +32,7 @@ docker build -t yahboom_ros2_workspace .
 
 **2. Run the Container (with GUI & USB support):**
 ```bash
-xhost +local:root
+xhost +
 docker run -it --rm \
   --name yahboom_nav_container \
   --net=host \
@@ -59,6 +45,28 @@ docker run -it --rm \
 *Note: The container uses the custom `bashrc_template` and automatically sources the workspace.*
 
 ### Option 2: Native Setup (Clone and Build)
+
+### Environment Setup 
+**Python Libraries**:
+
+```bash
+pip install -r requirements.txt
+```
+**ROS 2 Packages**:
+    
+Install essential packages:
+    
+```bash
+sudo apt update
+sudo apt install ros-humble-robot-localization \
+     ros-humble-slam-toolbox \
+     ros-humble-navigation2 \
+     ros-humble-nav2-bringup \
+     ros-humble-rmw-cyclonedds-cpp
+```
+
+**Clone Project**:
+
 ```bash
 # Clone with submodules
 git clone --recursive https://github.com/NapatzZ/Yahboom.git
@@ -73,7 +81,7 @@ colcon build
 source install/setup.bash
 ```
 
-### Environment Setup (Bashrc)
+### Bashrc setup
 To set up your terminal with the correct ROS_DOMAIN_ID (20), IP display, and workspace sourcing:
 ```bash
 chmod +x src/script/update_bashrc.sh
@@ -195,5 +203,180 @@ ros2 service call /yahboom_esp32/nav/nav_to_location yahboom_interfaces/srv/NavT
 ```
 
 ---
+
+## 5. Vision & Human Detection
+
+The `yahboom_vision` package provides camera image processing and MediaPipe-based human detection.
+
+### Architecture Overview
+
+```
+ESP32-CAM (WiFi)
+      │
+      │  Micro-ROS UDP (port 9999)          TCP (port 8888)
+      │  → publishes /espRos/esp32camera    ← set_camera.py (flip/mirror config)
+      │
+      ▼
+ [start_Camera_computer.sh]  ← Micro-ROS Agent (must run first)
+      │
+      ▼
+ image_proc node
+      │  /yahboom/vision/camera/image_raw  (Image)
+      │  /yahboom/vision/camera/debug      (Image, annotated)
+      ▼
+ human_detection node  ◄──── Service call from any node / terminal
+      │
+      └── /yahboom_esp32/vision/human_detection  →  bool detected
+```
+
+> [!IMPORTANT]
+> The camera ESP32 uses **port 9999** (Micro-ROS Agent).
+> The robot body ESP32 uses **port 8090** (separate agent).
+> Both must be running for full functionality.
+
+---
+
+### Step 0 (First-time only): Configure Camera Orientation
+
+If the image appears flipped or mirrored, run this once to correct it:
+
+```bash
+python3 src/script/set_camera.py
+# Enter the Docker container's IPv4 address when prompted
+```
+
+This connects to the ESP32-CAM via TCP (port 8888) and applies vflip/mirror settings. **Only needed once** during initial setup or if the image orientation is wrong.
+
+To change the orientation, edit `set_camera.py`:
+```python
+set_Camera(True, True)   # Flip vertically + mirror horizontally
+# set_Camera(False, False) # No flip, no mirror
+```
+
+---
+
+### Step 1: Start the Camera Micro-ROS Agent
+
+The camera ESP32 communicates via its **own Micro-ROS Agent on port 9999**.
+This must be running before any image data appears.
+
+```bash
+bash src/script/start_Camera_computer.sh
+```
+
+This runs:
+```bash
+docker run -it --rm -v /dev:/dev -v /dev/shm:/dev/shm --privileged --net=host \
+  microros/micro-ros-agent:humble udp4 --port 9999 -v4
+```
+
+---
+
+### Step 2: Start the Camera Stream
+
+Run `image_proc` to receive the compressed stream from the ESP32 and republish it as a raw ROS Image:
+
+```bash
+ros2 run yahboom_vision image_proc
+```
+
+**Topics published:**
+
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/yahboom/vision/camera/image_raw` | `sensor_msgs/Image` | Raw BGR frame (used by human_detection) |
+| `/yahboom/vision/camera/debug` | `sensor_msgs/Image` | Annotated debug frame |
+
+To preview the stream:
+```bash
+ros2 run rqt_image_view rqt_image_view /yahboom/vision/camera/debug
+```
+
+---
+
+### Step 3: Start the Human Detection Node
+
+In a separate terminal, start the detection service server:
+
+```bash
+ros2 run yahboom_vision human_detection
+```
+
+This node:
+- Continuously caches the latest frame from `/yahboom/vision/camera/image_raw`
+- Waits for service calls to `/yahboom_esp32/vision/human_detection`
+- Runs **MediaPipe Pose** on each frame when triggered
+
+---
+
+### Step 4: Trigger Human Detection
+
+Call the service with a timeout (in seconds). Returns as soon as a human is confirmed, or when the timeout expires.
+
+```bash
+ros2 service call /yahboom_esp32/vision/human_detection \
+  yahboom_interfaces/srv/HumanDetection "{timeout: 5.0}"
+```
+
+**Response example:**
+```yaml
+detected: true    # Human found within timeout
+```
+```yaml
+detected: false   # No human detected before timeout
+```
+
+---
+
+### Detection Thresholds
+
+MediaPipe Pose detects 33 body landmarks. A frame is classified as **"human detected"** when:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `VISIBILITY_THRESHOLD` | `0.5` | Minimum confidence per landmark (0.0–1.0) |
+| `LANDMARK_THRESHOLD` | `15` | Minimum number of visible landmarks (out of 33) |
+
+> [!TIP]
+> Tune these constants at the top of `human_detection.py` to adjust sensitivity.
+> - **Reduce** `LANDMARK_THRESHOLD` → more sensitive (detects partial bodies)
+> - **Increase** `LANDMARK_THRESHOLD` → more strict (requires full body visibility)
+
+---
+
+### Calling from Another Node (Python)
+
+```python
+from yahboom_interfaces.srv import HumanDetection
+
+client = self.create_client(HumanDetection, '/yahboom_esp32/vision/human_detection')
+client.wait_for_service()
+
+req = HumanDetection.Request()
+req.timeout = 5.0
+
+future = client.call_async(req)
+rclpy.spin_until_future_complete(self, future)
+
+if future.result().detected:
+    self.get_logger().info('Human detected!')
+else:
+    self.get_logger().info('No human found.')
+```
+
+---
+
+### Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| No image on `/espRos/esp32camera` | Camera agent not running | Run `start_Camera_computer.sh` first |
+| `No frame received yet` warning | `image_proc` not running | Run `ros2 run yahboom_vision image_proc` |
+| Image upside-down / mirrored | Orientation not configured | Run `set_camera.py` once |
+| `detected` always `false` | Poor lighting / camera angle | Check debug topic with `rqt_image_view`, lower `LANDMARK_THRESHOLD` |
+| `mediapipe` import error | Library not installed | `pip install mediapipe` |
+| Service not found | Node not started | Run `ros2 run yahboom_vision human_detection` |
+
+
 
 

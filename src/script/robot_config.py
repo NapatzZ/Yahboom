@@ -71,7 +71,6 @@ class MicroROS_Robot():
             time.sleep(self.__send_delay)
         if self.__debug:
             print ("Send: [0x" + ', 0x'.join('{:02X}'.format(x) for x in tx) + "]")
-            # print ("Send: [" + ' '.join('{:02X}'.format(x) for x in tx) + "]")
 
     # Send request data
     def __request(self, addr, param=0):
@@ -86,19 +85,15 @@ class MicroROS_Robot():
         self.__ser.write(tx)
         if self.__debug:
             print ("Read: [0x" + ', 0x'.join('{:02X}'.format(x) for x in tx) + "]")
-            # print ("Read: [" + ' '.join('{:02X}'.format(x) for x in tx) + "]")
 
     # Parse data
     def __unpack(self):
         n = self.__ser.inWaiting()
         rx_CHECK = 0
         if n:
-            #print("OK")
             data_array = self.__ser.read_all()
             if self.__debug:
-                # print("rx_data:", list(data_array))
                 print ("rx_data: [0x" + ', 0x'.join('{:02X}'.format(x) for x in data_array) + "]")
-                # print ("rx_data: [" + ' '.join('{:02X}'.format(x) for x in data_array) + "]")
             for data in data_array:
                 if self.__rx_FLAG == 0:
                     if data == self.__HEAD:
@@ -146,9 +141,6 @@ class MicroROS_Robot():
 
     # Reboot device
     def reboot_device(self):
-        # ORDER["REBOOT_DEVICE"][1] = 0x5F
-        # ORDER["REBOOT_DEVICE"][2] = 0x5F
-        # self.__send("REBOOT_DEVICE", len=2)
         self.__ser.setDTR(False)
         self.__ser.setRTS(True)
         time.sleep(.1)
@@ -156,17 +148,17 @@ class MicroROS_Robot():
         self.__ser.setRTS(True)
         time.sleep(2)
     
-    # Restore factory Settings, Restart to take effect
+    # Restore factory settings. Restart to take effect.
     def reset_factory_config(self):
         ORDER["RESET_CONFIG"][1] = 0x5F
         ORDER["RESET_CONFIG"][2] = 0x5F
         self.__send("RESET_CONFIG", len=2)
     
-    # Configure the WiFi information, enter the WiFi signal name and password. Restart takes effect.
+    # Configure the WiFi information, enter the WiFi signal name and password. Restart to take effect.
     def set_wifi_config(self, ssid, passwd):
         """
-        配置WiFi信息, 输入WiFi信号名称和密码。重启生效
-        输入参数示例: ssid="ssid123", passwd="passwd123"
+        Configure WiFi info, enter the WiFi signal name and password. Restart to take effect.
+        Example input: ssid="ssid123", passwd="passwd123"
         """
         ssid_bytes = bytes(str(ssid), "utf-8")
         for i in range(len(ssid)):
@@ -177,11 +169,11 @@ class MicroROS_Robot():
             ORDER["WIFI_PASSWD"].append(passwd_bytes[i])
         self.__send("WIFI_PASSWD", len=len(passwd))
 
-    # Configure the WiFi proxy IP address and port number. Restart to take effect
+    # Configure the WiFi proxy IP address and port number. Restart to take effect.
     def set_udp_config(self, ip, port):
         '''
-        配置WiFi代理IP地址和端口号。重启生效
-        输入参数示例: ip=[192,168,2,116],port=8090
+        Configure the WiFi proxy IP address and port number. Restart to take effect.
+        Example input: ip=[192,168,2,116], port=8090
         '''
         ORDER["AGENT_IP"][1] = int(ip[0]) & 0xFF
         ORDER["AGENT_IP"][2] = int(ip[1]) & 0xFF
@@ -192,11 +184,11 @@ class MicroROS_Robot():
         ORDER["AGENT_PORT"][2] = int(port>>8)&0xFF
         self.__send("AGENT_PORT", len=2)
 
-    # Configure the baud rate for ROS serial communication. Restart to take effect
+    # Configure the baud rate for ROS serial communication. Restart to take effect.
     def set_ros_serial_baudrate(self, baudrate):
         '''
-        配置ROS串口通讯波特率。重启生效
-        输入参数示例: baudrate=115200
+        Configure the ROS serial communication baud rate. Restart to take effect.
+        Example input: baudrate=115200
         '''
         value_s = bytearray(struct.pack('i', int(baudrate)))
         ORDER["SERIAL_BAUDRATE"][1] = value_s[0]
@@ -205,11 +197,11 @@ class MicroROS_Robot():
         ORDER["SERIAL_BAUDRATE"][4] = value_s[3]
         self.__send("SERIAL_BAUDRATE", len=4)
     
-    # Configure the ROS namespace. Restart to take effect
+    # Configure the ROS namespace. Restart to take effect.
     def set_ros_namespace(self, ros_namespace):
         """
-        配置ROS命名空间。重启生效
-        输入参数示例: ros_namespace="robot1"
+        Configure the ROS namespace. Restart to take effect.
+        Example input: ros_namespace="robot1"
         """
         name_len = len(ros_namespace)
         if name_len > 0:
@@ -221,21 +213,22 @@ class MicroROS_Robot():
             ORDER["ROS_NAMESPACE"].append(0)
         self.__send("ROS_NAMESPACE", len=name_len)
 
-    # Configure the car type (agent). Restart to take effect
+    # Configure the car type (agent mode). Restart to take effect.
     def set_car_type(self, car_type):
         '''
-        配置小车类型（代理方式）。重启生效
-        输入参数示例:car_type=0表示虚拟机/电脑版本小车(WiFi代理方式), car_type=1表示树莓派版本小车(串口代理方式)。
+        Configure the car type (agent mode). Restart to take effect.
+        Example input: car_type=0 = VM/computer version (WiFi proxy mode),
+                       car_type=1 = Raspberry Pi version (serial proxy mode).
         '''
         ORDER["CAR_TYPE"][1] = int(car_type) & 0xFF
         ORDER["CAR_TYPE"][2] = 0
         self.__send("CAR_TYPE", len=2)
 
-    # Configure the ROS DOMAIN ID. Restart takes effect.
+    # Configure the ROS DOMAIN ID. Restart to take effect.
     def set_ros_domain_id(self, domain_id):
         '''
-        配置ROS DOMAIN ID。重启生效。
-        输入参数示例:domain_id=30。domain_id取值范围: 0 <= domain_id <= 100
+        Configure ROS DOMAIN ID. Restart to take effect.
+        Example input: domain_id=30. Valid range: 0 <= domain_id <= 100
         '''
         if domain_id > 100:
             domain_id = 100
@@ -246,23 +239,22 @@ class MicroROS_Robot():
         ORDER["DOMAIN_ID"][2] = value_s[1]
         self.__send("DOMAIN_ID", len=2)
 
-    # Configure PWM steering gear offset Angle.
+    # Configure PWM servo offset angle.
     def set_pwm_servo_offset(self, servo_id, offset):
         '''
-        配置PWM舵机偏移角度。
-        servo_id表示舵机编号, servo_id=1表示操作舵机S1, servo_id=2表示操作舵机S2。
-        offset表示调节偏差角度, offset取值范围为:[-6, 6]
+        Configure PWM servo offset angle.
+        servo_id is the servo number: servo_id=1 operates servo S1, servo_id=2 operates servo S2.
+        offset is the adjustment angle deviation. Valid range: [-6, 6]
         '''
         ORDER["SERVO_OFFSET"][1] = int(servo_id) & 0xFF
         ORDER["SERVO_OFFSET"][2] = int(offset) & 0xFF
         self.__send("SERVO_OFFSET", len=2)
 
-
     # Set motor PID parameters.
     def set_motor_pid_parm(self, pid_p, pid_i, pid_d):
         '''
-        设置电机PID参数。
-        pid参数取值范围: [0.00, 10.00]
+        Set motor PID parameters.
+        PID parameter valid range: [0.00, 10.00]
         '''
         pid_p_s = bytearray(struct.pack('h', int(pid_p*100)))
         pid_i_s = bytearray(struct.pack('h', int(pid_i*100)))
@@ -278,8 +270,8 @@ class MicroROS_Robot():
     # Set IMU YAW PID parameters.
     def set_imu_yaw_pid_parm(self, pid_p, pid_i, pid_d):
         '''
-        设置IMU YAW PID参数。
-        pid参数取值范围: [0.00, 10.00]
+        Set IMU YAW PID parameters.
+        PID parameter valid range: [0.00, 10.00]
         '''
         pid_p_s = bytearray(struct.pack('h', int(pid_p*100)))
         pid_i_s = bytearray(struct.pack('h', int(pid_i*100)))
@@ -295,7 +287,7 @@ class MicroROS_Robot():
 
     def read_wifi_ssid(self):
         '''
-        读取底板连接的WiFi信号名称
+        Read the WiFi signal name the base board is connected to.
         '''
         self.__request(ORDER["WIFI_SSID"][0])
         time.sleep(self.__read_delay)
@@ -306,7 +298,7 @@ class MicroROS_Robot():
 
     def read_wifi_passwd(self):
         '''
-        读取底板连接的WiFi密码
+        Read the WiFi password stored on the base board.
         '''
         self.__request(ORDER["WIFI_PASSWD"][0])
         time.sleep(self.__read_delay)
@@ -317,7 +309,7 @@ class MicroROS_Robot():
 
     def read_agent_ip_addr(self):
         '''
-        Read the WiFi proxy IP address from the base board
+        Read the WiFi proxy IP address from the base board.
         '''
         self.__request(ORDER["AGENT_IP"][0])
         time.sleep(self.__read_delay)
@@ -328,7 +320,7 @@ class MicroROS_Robot():
 
     def read_agent_ip_port(self):
         '''
-        读取底板WiFi代理的IP端口
+        Read the WiFi proxy IP port from the base board.
         '''
         self.__request(ORDER["AGENT_PORT"][0])
         time.sleep(self.__read_delay)
@@ -340,7 +332,7 @@ class MicroROS_Robot():
 
     def read_car_type(self):
         '''
-        读取底板小车类型、代理连接方式。
+        Read the car type and agent connection mode from the base board.
         '''
         self.__request(ORDER["CAR_TYPE"][0])
         time.sleep(self.__read_delay)
@@ -359,7 +351,7 @@ class MicroROS_Robot():
 
     def read_ros_domain_id(self):
         '''
-        读取底板ROS DOMAIN ID
+        Read the ROS DOMAIN ID from the base board.
         '''
         self.__request(ORDER["DOMAIN_ID"][0])
         time.sleep(self.__read_delay)
@@ -369,10 +361,9 @@ class MicroROS_Robot():
             str_data = "%d" % (domain_id)
         return str_data
 
-
     def read_ros_serial_baudrate(self):
         '''
-        读取底板ROS串口通讯波特率
+        Read the ROS serial communication baud rate from the base board.
         '''
         self.__request(ORDER["SERIAL_BAUDRATE"][0])
         time.sleep(self.__read_delay)
@@ -384,7 +375,7 @@ class MicroROS_Robot():
     
     def read_ros_namespace(self):
         '''
-        读取底板的ROS命名空间
+        Read the ROS namespace from the base board.
         '''
         self.__request(ORDER["ROS_NAMESPACE"][0])
         time.sleep(self.__read_delay)
@@ -395,7 +386,7 @@ class MicroROS_Robot():
 
     def read_pwm_servo_offset(self):
         '''
-        读取底板PWM舵机偏差角度
+        Read the PWM servo offset angle from the base board.
         '''
         self.__request(ORDER["SERVO_OFFSET"][0])
         time.sleep(self.__read_delay)
@@ -408,7 +399,7 @@ class MicroROS_Robot():
 
     def read_motor_pid_parm(self):
         '''
-        读取底板电机PID参数
+        Read the motor PID parameters from the base board.
         '''
         self.__request(ORDER["MOTOR_PID"][0])
         time.sleep(self.__read_delay)
@@ -422,7 +413,7 @@ class MicroROS_Robot():
 
     def read_imu_yaw_pid_parm(self):
         '''
-        读取底板IMU YAW PID参数
+        Read the IMU YAW PID parameters from the base board.
         '''
         self.__request(ORDER["IMU_YAW_PID"][0])
         time.sleep(self.__read_delay)
@@ -434,11 +425,9 @@ class MicroROS_Robot():
             str_data = "%.2f, %.2f, %.2f" % (pid_p, pid_i, pid_d)
         return str_data
 
-
     def read_version(self):
         '''
-        返回固件版本
-        Return the firmware version
+        Return the firmware version.
         '''
         self.__request(ORDER["FIRMWARE_VERSION"][0])
         time.sleep(self.__read_delay)
@@ -544,18 +533,8 @@ if __name__ == '__main__':
 
     try:
         while False:
-            # robot.beep(100)
             time.sleep(1)
     except:
         pass
     time.sleep(.1)
     del robot
-bot
-  del robot
-bot
-   pass
-    time.sleep(.1)
-    del robot
-bot
-obot
-bot
