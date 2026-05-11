@@ -144,4 +144,28 @@ ros2 launch yahboom_nav2 navigate.launch.py
 
 ---
 
+## 4. Navigation Interfaces
+
+When running the navigation stack (`navigate.launch.py`), a custom command server is automatically started. You can interact with the robot using the following ROS 2 services under the `yahboom_esp32/nav/` namespace.
+
+### 4.1 Save Current Location
+Saves the robot's current position (X, Y, Yaw) from the `map` to `base_footprint` TF into `src/yahboom_nav2/maps/locations.yaml`.
+```bash
+ros2 service call /yahboom_esp32/nav/save_location yahboom_interfaces/srv/SaveLocation "{location_name: 'point_a'}"
+```
+
+### 4.2 Move Distance (Manual)
+Commands the robot to move straight by a specific distance (in meters) directly via `/cmd_vel`. Positive for forward, negative for backward.
+```bash
+ros2 service call /yahboom_esp32/nav/move_distance yahboom_interfaces/srv/MoveDistance "{distance: 1.0}"
+```
+
+### 4.3 Rotate Degree (Manual)
+Commands the robot to rotate in place by a specific degree directly via `/cmd_vel`. Positive for Counter-Clockwise (left), negative for Clockwise (right).
+```bash
+ros2 service call /yahboom_esp32/nav/rotate_degree yahboom_interfaces/srv/RotateDegree "{degrees: 90.0}"
+```
+
+---
+
 
