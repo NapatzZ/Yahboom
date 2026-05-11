@@ -1,6 +1,8 @@
 import serial
 import struct
 import time
+import socket
+import subprocess
 
 """
 ORDER is used to store the command address and corresponding data
@@ -481,15 +483,50 @@ class MicroROS_Robot():
         imu_pid_parm = self.read_imu_yaw_pid_parm()
         print("imu yaw pid parm:", imu_pid_parm)
 
+def get_active_wifi_info():
+    """Extracts the active WiFi SSID and Password on Ubuntu using nmcli without sudo."""
+    try:
+        conn_cmd = "nmcli -t -f NAME,TYPE connection show --active | grep 802-11-wireless | cut -d: -f1"
+        conn_name = subprocess.check_output(conn_cmd, shell=True).decode('utf-8').strip()
+        if not conn_name:
+            return None, None
+            
+        pwd_cmd = f"nmcli -s -g 802-11-wireless-security.psk connection show '{conn_name}'"
+        pwd = subprocess.check_output(pwd_cmd, shell=True).decode('utf-8').strip()
+        return conn_name, pwd
+    except Exception:
+        return None, None
 
+def get_local_ip():
+    """Dynamically finds the computer's local IP address."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return [int(x) for x in ip.split('.')]
+    except Exception:
+        return [192, 168, 1, 100]
 
 if __name__ == '__main__':
     robot = MicroROS_Robot(port='/dev/ttyUSB0', debug=False)
     print("Rebooting Device, Please wait.")
     robot.reboot_device()
 
-    robot.set_wifi_config("skuba_net", "Skubapassword")
-    robot.set_udp_config([192, 168, 0, 22], 8090)
+    # Auto-detect Network Information
+    ssid, passwd = get_active_wifi_info()
+    local_ip = get_local_ip()
+
+    if ssid and passwd:
+        print(f"Auto-detected WiFi: {ssid}")
+        robot.set_wifi_config(ssid, passwd)
+    else:
+        print("Warning: Could not auto-detect WiFi. Using fallback values.")
+        robot.set_wifi_config("skuba_net", "Skubapassword")
+
+    print(f"Auto-detected Agent IP: {local_ip}")
+    robot.set_udp_config(local_ip, 8090)
+
     robot.set_car_type(robot.CAR_TYPE_COMPUTER)
     # robot.set_car_type(robot.CAR_TYPE_RPI5)
     # robot.set_car_type(robot.CAR_TYPE_RISCV)
