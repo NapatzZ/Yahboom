@@ -3,6 +3,8 @@
 
 ROS 2 project for Yahboom ESP32 robots, including Micro-ROS, SLAM, and Navigation.
 
+![Yahboom Car](https://www.google.com/url?sa=t&source=web&rct=j&url=https%3A%2F%2Fcategory.yahboom.net%2Fcollections%2Fesp32-series%3Fsrsltid%3DAfmBOoo_UIxD9E_0KDIu0evRvfpwIybegP5NHTJCEWppUkMn2CJ3V8m1&ved=0CBYQjRxqFwoTCLiN0NP3sJQDFQAAAAAdAAAAABAG&opi=89978449)  
+
 ## 0. Requirements
 
 ### Hardware
