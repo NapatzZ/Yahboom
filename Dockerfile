@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     ros-humble-nav2-bringup \
     ros-humble-rmw-cyclonedds-cpp \
     nano \
+    byobu \ 
     iputils-ping \
     net-tools \
     python3-colcon-common-extensions \
@@ -38,10 +39,10 @@ RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
 # Build the workspace
 RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build"
 
-# Setup bashrc to automatically source ROS and workspace
-RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
-    echo "source /ros2_ws/install/setup.bash" >> ~/.bashrc && \
-    echo "export ROS_DOMAIN_ID=20" >> ~/.bashrc
+# Setup bashrc to use the custom template and automatically source ROS and workspace
+COPY ./src/script/bashrc_template /root/.bashrc
+RUN sed -i 's|$HOME/Yahboom|/ros2_ws|g' /root/.bashrc && \
+    sed -i 's|ip addr show wlp4s0 |hostname -I |g' /root/.bashrc
 
 # Set the default entrypoint
 COPY ./src/script/docker_entrypoint.sh /

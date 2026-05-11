@@ -36,7 +36,29 @@ ROS 2 project for Yahboom ESP32 robots, including Micro-ROS, SLAM, and Navigatio
 
 ## 1. Installation & Setup
 
-### Clone and Build
+### Option 1: Docker Environment (Recommended)
+We provide a fully containerized environment that includes all dependencies, ROS 2, and the pre-built workspace.
+
+**1. Build the Docker Image:**
+```bash
+docker build -t yahboom_ros2_workspace .
+```
+
+**2. Run the Container (with GUI & USB support):**
+```bash
+xhost +local:root
+docker run -it --rm \
+  --name yahboom_nav_container \
+  --net=host \
+  --privileged \
+  -v /dev:/dev \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -e DISPLAY=$DISPLAY \
+  yahboom_ros2_workspace bash
+```
+*Note: The container uses the custom `bashrc_template` and automatically sources the workspace.*
+
+### Option 2: Native Setup (Clone and Build)
 ```bash
 # Clone with submodules
 git clone --recursive https://github.com/NapatzZ/Yahboom.git
