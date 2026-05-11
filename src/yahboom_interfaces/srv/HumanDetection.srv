@@ -1,0 +1,6 @@
+# HumanDetection.srv
+# Request: Timeout in seconds to wait for a valid detection
+float64 timeout
+---
+# Response: True if a human was detected within the timeout window
+bool detected

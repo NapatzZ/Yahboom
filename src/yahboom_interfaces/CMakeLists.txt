@@ -14,6 +14,7 @@ set(srv_files
   "srv/MoveDistance.srv"
   "srv/RotateDegree.srv"
   "srv/NavToLocation.srv"
+  "srv/HumanDetection.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
