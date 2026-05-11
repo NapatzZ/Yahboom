@@ -70,20 +70,27 @@ source install/setup.bash
 
 ## 2. Robot Configuration (WiFi & IP)
 
-To fetch new WiFi settings or update the Agent IP on the robot hardware:
+The robot must be configured to connect to your local network and point to your computer's IP address (Micro-ROS Agent).
+
+This process is highly automated. The configuration script will **automatically detect** your currently active WiFi connection (SSID & Password) via `nmcli` and your computer's local IP address.
 
 1. Connect the robot via USB.
-2. Open `src/script/robot_config.py`.
-3. Modify the `if __name__ == '__main__':` block with your new settings:
-   ```python
-   robot.set_wifi_config("YOUR_SSID", "YOUR_PASSWORD")
-   robot.set_udp_config([192, 168, 1, 100], 8090) # Your Computer IP
-   ```
-4. Run the configuration script:
+2. Run the configuration script:
    ```bash
    python3 src/script/robot_config.py
    ```
-5. Reboot the robot.
+3. Reboot the robot.
+
+**Fallback Configuration (If Auto-Detect Fails)**
+If you are not running Ubuntu, or if `nmcli` fails to retrieve the password, the script will use fallback credentials. To edit the fallback settings:
+1. Open `src/script/robot_config.py`.
+2. Locate the `if __name__ == '__main__':` block at the bottom of the file.
+3. Modify the fallback line with your manual credentials:
+   ```python
+   print("Warning: Could not auto-detect WiFi. Using fallback values.")
+   robot.set_wifi_config("YOUR_SSID", "YOUR_PASSWORD")
+   ```
+4. Rerun the script and reboot the robot.
 
 ---
 
