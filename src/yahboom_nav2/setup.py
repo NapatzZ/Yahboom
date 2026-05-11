@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             "map_saver=yahboom_nav2.map_saver:main",
+            "command_server=yahboom_nav2.command_server:main",
         ],
     },
 )

@@ -4,6 +4,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
 
 def generate_launch_description():
     yahboom_nav2_dir = get_package_share_directory('yahboom_nav2')
@@ -22,7 +23,15 @@ def generate_launch_description():
         )
     )
 
+    command_server_node = Node(
+        package='yahboom_nav2',
+        executable='command_server',
+        name='command_server',
+        output='screen'
+    )
+
     return LaunchDescription([
         navigation_launch,
         rviz_launch,
+        command_server_node,
     ])

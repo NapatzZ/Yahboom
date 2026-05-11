@@ -1,0 +1,7 @@
+# MoveDistance.srv
+# Request: Distance to move in meters (positive = forward, negative = backward)
+float64 distance
+---
+# Response: Success status and message
+bool success
+string message

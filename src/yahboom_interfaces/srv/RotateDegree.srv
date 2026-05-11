@@ -1,0 +1,7 @@
+# RotateDegree.srv
+# Request: Degrees to rotate (positive = CCW/left, negative = CW/right)
+float64 degrees
+---
+# Response: Success status and message
+bool success
+string message
