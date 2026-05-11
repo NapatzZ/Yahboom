@@ -2,15 +2,7 @@ import serial
 import struct
 import time
 
-'''
-Author  : Yahboom Team
-Version : V1.1.1
-LastEdit: 2024.03.19
-'''
-
-
 """
-ORDER 用来存放命令地址和对应数据
 ORDER is used to store the command address and corresponding data
 """
 ORDER = {
@@ -33,7 +25,6 @@ ORDER = {
     "REQUEST_DATA": [0x50, 0, 0],
     "FIRMWARE_VERSION": [0x51],
 }
-
 
 class MicroROS_Robot():
 
@@ -61,7 +52,7 @@ class MicroROS_Robot():
         self.CAR_TYPE_RPI5 = 1
         self.CAR_TYPE_RISCV = 2
 
-    # 发送一些数据到设备 Send some data to device
+    # Send some data to device
     def __send(self, key, len=1):
         order = ORDER[key][0]
         value = []
@@ -80,7 +71,7 @@ class MicroROS_Robot():
             print ("Send: [0x" + ', 0x'.join('{:02X}'.format(x) for x in tx) + "]")
             # print ("Send: [" + ' '.join('{:02X}'.format(x) for x in tx) + "]")
 
-    # 发送请求数据 Send request data
+    # Send request data
     def __request(self, addr, param=0):
         order = self.__READ_DATA
         buf_len = 7
@@ -95,7 +86,7 @@ class MicroROS_Robot():
             print ("Read: [0x" + ', 0x'.join('{:02X}'.format(x) for x in tx) + "]")
             # print ("Read: [" + ' '.join('{:02X}'.format(x) for x in tx) + "]")
 
-    # 解析数据 parse data
+    # Parse data
     def __unpack(self):
         n = self.__ser.inWaiting()
         rx_CHECK = 0
@@ -151,7 +142,7 @@ class MicroROS_Robot():
         return False
 
 
-    # 重启设备 reboot device
+    # Reboot device
     def reboot_device(self):
         # ORDER["REBOOT_DEVICE"][1] = 0x5F
         # ORDER["REBOOT_DEVICE"][2] = 0x5F
@@ -163,7 +154,6 @@ class MicroROS_Robot():
         self.__ser.setRTS(True)
         time.sleep(2)
     
-    # 恢复出厂配置, 重启生效
     # Restore factory Settings, Restart to take effect
     def reset_factory_config(self):
         ORDER["RESET_CONFIG"][1] = 0x5F
@@ -325,7 +315,7 @@ class MicroROS_Robot():
 
     def read_agent_ip_addr(self):
         '''
-        读取底板WiFi代理的IP地址
+        Read the WiFi proxy IP address from the base board
         '''
         self.__request(ORDER["AGENT_IP"][0])
         time.sleep(self.__read_delay)
@@ -455,7 +445,6 @@ class MicroROS_Robot():
             str_version = "%d.%d.%d" % (self.__rx_DATA[0], self.__rx_DATA[1], self.__rx_DATA[2])
         return str_version
 
-    # 读取并打印所有配置信息。
     # Read and print all configuration information.
     def print_all_firmware_parm(self):
         version = self.read_version()
@@ -524,3 +513,12 @@ if __name__ == '__main__':
         pass
     time.sleep(.1)
     del robot
+bot
+  del robot
+bot
+   pass
+    time.sleep(.1)
+    del robot
+bot
+obot
+bot
