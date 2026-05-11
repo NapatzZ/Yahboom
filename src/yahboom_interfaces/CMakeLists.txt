@@ -13,6 +13,7 @@ set(srv_files
   "srv/SaveLocation.srv"
   "srv/MoveDistance.srv"
   "srv/RotateDegree.srv"
+  "srv/NavToLocation.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

@@ -166,6 +166,12 @@ Commands the robot to rotate in place by a specific degree directly via `/cmd_ve
 ros2 service call /yahboom_esp32/nav/rotate_degree yahboom_interfaces/srv/RotateDegree "{degrees: 90.0}"
 ```
 
+### 4.4 Navigate to Saved Location
+Commands the robot to autonomously navigate to a previously saved location using the Nav2 stack. The location name must exist in `locations.yaml`.
+```bash
+ros2 service call /yahboom_esp32/nav/nav_to_location yahboom_interfaces/srv/NavToLocation "{location_name: 'point_a'}"
+```
+
 ---
 
 

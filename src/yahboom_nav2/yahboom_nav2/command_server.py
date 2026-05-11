@@ -30,6 +30,9 @@ class CommandServerNode(Node):
         # Initialize publisher for movement
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         
+        # Initialize Action Client for Navigation
+        self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
+        
         # Define namespace for services
         namespace = 'yahboom_esp32/nav'
         
@@ -48,6 +51,11 @@ class CommandServerNode(Node):
             RotateDegree, 
             f'{namespace}/rotate_degree', 
             self.rotate_degree_callback
+        )
+        self.srv_nav_loc = self.create_service(
+            NavToLocation, 
+            f'{namespace}/nav_to_location', 
+            self.nav_to_location_callback
         )
         
         self.get_logger().info('Command Server Node is ready.')
@@ -174,6 +182,45 @@ class CommandServerNode(Node):
         
         response.success = True
         response.message = f"Successfully rotated {degrees} degrees."
+        return response
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = CommandServerNode()
+    
+    try:
+        # Use MultiThreadedExecutor if services might be called simultaneously or need to run while waiting
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+      
+        loc = locations[location_name]
+        x, y, yaw = float(loc['x']), float(loc['y']), float(loc['yaw'])
+        
+        if not self.nav_to_pose_client.wait_for_server(timeout_sec=2.0):
+            response.success = False
+            response.message = "Nav2 action server is not running."
+            return response
+            
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose.header.frame_id = 'map'
+        goal_msg.pose.header.stamp = self.get_clock().now().to_msg()
+        goal_msg.pose.pose.position.x = x
+        goal_msg.pose.pose.position.y = y
+        goal_msg.pose.pose.orientation.z = math.sin(yaw / 2.0)
+        goal_msg.pose.pose.orientation.w = math.cos(yaw / 2.0)
+        
+        self.nav_to_pose_client.send_goal_async(goal_msg)
+        
+        response.success = True
+        response.message = f"Navigation to '{location_name}' started."
+        self.get_logger().info(response.message)
         return response
 
 def main(args=None):

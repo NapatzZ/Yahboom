@@ -1,0 +1,7 @@
+# NavToLocation.srv
+# Request: The name of the saved location to navigate to
+string location_name
+---
+# Response: Success status and message
+bool success
+string message
