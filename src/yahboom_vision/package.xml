@@ -7,6 +7,11 @@
   <maintainer email="robotkubofficial@gmail.com">robotkubofficial</maintainer>
   <license>TODO: License declaration</license>
 
+  <depend>cv_bridge</depend>
+  <depend>sensor_msgs</depend>
+  <depend>yahboom_interfaces</depend>
+  <!-- mediapipe is installed via pip: pip install mediapipe -->
+
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

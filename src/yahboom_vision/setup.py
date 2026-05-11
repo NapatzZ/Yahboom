@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             "image_proc=yahboom_vision.image_proc:main",
+            "human_detection=yahboom_vision.human_detection:main",
         ],
     },
 )
