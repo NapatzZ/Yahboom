@@ -9,12 +9,6 @@ def generate_launch_description():
     yahboom_nav2_dir = get_package_share_directory('yahboom_nav2')
     nav2_dir = get_package_share_directory('nav2_bringup')
 
-    navigation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(yahboom_nav2_dir, 'launch', 'navigation_launch.py')
-        ),
-    )
-
     rviz_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(nav2_dir, 'launch', 'rviz_launch.py')
@@ -28,7 +22,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        navigation_launch,
         rviz_launch,
         online_async_launch
     ])

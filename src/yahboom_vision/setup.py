@@ -13,8 +13,8 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='pat',
-    maintainer_email='nptttn.pat@gmail.com',
+    maintainer='robotkubofficial',
+    maintainer_email='robotkubofficial@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     extras_require={

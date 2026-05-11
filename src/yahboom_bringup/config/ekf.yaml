@@ -12,17 +12,32 @@ ekf_filter_node:
     base_link_frame: base_footprint
     world_frame: odom
 
+    # --- ENCODER (Wheel Odometry) ---
     odom0: /odom_raw
+    # Trusting x, y, vx from wheels. Ignoring yaw and vyaw to mitigate wheel slip.
     odom0_config: [true,  true,  false,
-                   false, false, true,
-                   true,  true,  false,
-                   false, false, true,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, false,
                    false, false, false]
     odom0_queue_size: 10
     odom0_differential: false
     odom0_relative: false
 
-    imu0: /imu/data
+    # --- LASER ODOMETRY (rf2o) ---
+    odom1: /laser_odom
+    # Trusting vx, vy, vyaw (velocities) from laser to compensate for wheel slip during rotation.
+    odom1_config: [false, false, false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, true,
+                   false, false, false]
+    odom1_queue_size: 10
+    odom1_differential: false
+    odom1_relative: false
+
+    # --- IMU ---
+    imu0: /imu/data_filtered
     imu0_config: [false, false, false,
                   false, false, true,
                   false, false, false,

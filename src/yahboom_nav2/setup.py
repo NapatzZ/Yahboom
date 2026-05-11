@@ -19,8 +19,8 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='pat',
-    maintainer_email='nptttn.pat@gmail.com',
+    maintainer='robotkubofficial',
+    maintainer_email='robotkubofficial@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     extras_require={
@@ -30,7 +30,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "nav_node=yahboom_nav2.nav_node:main",
             "map_saver=yahboom_nav2.map_saver:main",
         ],
     },

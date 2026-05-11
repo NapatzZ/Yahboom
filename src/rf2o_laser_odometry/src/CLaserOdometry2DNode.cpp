@@ -40,13 +40,26 @@ CLaserOdometry2DNode::CLaserOdometry2DNode(): Node("CLaserOdometry2DNode")
   this->declare_parameter<double>("freq", 10.0);
   this->get_parameter("freq", freq);
 
+  // Get QoS Reliability (0 = BEST_EFFORT, 1 = RELIABLE)
+  int qos_reliability = 1;
+  this->declare_parameter<int>("qos_reliability", 1);
+  this->get_parameter("qos_reliability", qos_reliability);
+
+  rclcpp::QoS qos_profile(1);
+  if (qos_reliability == 0) {
+      qos_profile.best_effort();
+  } else {
+      qos_profile.reliable();
+  }
+  qos_profile.durability_volatile();
+
   // Init Publishers and Subscribers
   //---------------------------------
   buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*buffer_);
   odom_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(this);
   odom_pub  = this->create_publisher<nav_msgs::msg::Odometry>(odom_topic, 5);
-  laser_sub = this->create_subscription<sensor_msgs::msg::LaserScan>(laser_scan_topic,rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile(),
+  laser_sub = this->create_subscription<sensor_msgs::msg::LaserScan>(laser_scan_topic, qos_profile,
       std::bind(&CLaserOdometry2DNode::LaserCallBack, this, std::placeholders::_1));
   
   // Initialize pose

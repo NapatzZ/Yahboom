@@ -1,8 +1,0 @@
-odom_to_tf:
-  ros__parameters:
-    odom_topic: "/odom_raw"
-    frame_id: "odom"
-    child_frame_id: "base_footprint"
-    inverse_tf: False
-    use_sim_time: False
-    use_original_timestamp: True

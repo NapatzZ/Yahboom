@@ -41,9 +41,18 @@ def generate_launch_description():
         )
     )
 
+    # IMU Filter Node
+    imu_filter_node = Node(
+        package='yahboom_bringup',
+        executable='imu_filter_node',
+        name='imu_filter_node',
+        output='screen'
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         description_launch,
+        imu_filter_node,
         ekf_node,
         rf2o_launch
     ])
