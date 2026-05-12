@@ -11,7 +11,7 @@ def generate_launch_description():
     # Directories
     yahboom_bringup_dir = get_package_share_directory('yahboom_bringup')
     description_dir = get_package_share_directory('yahboomcar_description')
-    
+
     # Configurations
     ekf_config_path = os.path.join(yahboom_bringup_dir, 'config', 'ekf.yaml')
 
@@ -25,7 +25,25 @@ def generate_launch_description():
         )
     )
 
-    # EKF (Robot Localization) for Odom + IMU Fusion
+    # IMU Filter Node — pre-processes raw IMU before EKF
+    # Subscribes: /imu/data_raw  ->  Publishes: /imu/data_filtered
+    imu_filter_node = Node(
+        package='yahboom_bringup',
+        executable='imu_filter_node',
+        name='imu_filter_node',
+        output='screen'
+    )
+
+    # Laser Odometry (rf2o) — estimates velocity from consecutive LiDAR scans
+    # Subscribes: /scan  ->  Publishes: /laser_odom
+    rf2o_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(yahboom_bringup_dir, 'launch', 'rf2o.launch.py')
+        )
+    )
+
+    # EKF (Robot Localization) — fuses /odom_raw + /laser_odom + /imu/data_filtered
+    # Publishes: /odom  and  odom -> base_footprint TF
     ekf_node = Node(
         package='robot_localization',
         executable='ekf_node',
@@ -34,25 +52,12 @@ def generate_launch_description():
         parameters=[ekf_config_path, {'use_sim_time': use_sim_time}]
     )
 
-    # Laser Odometry (rf2o)
-    rf2o_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(yahboom_bringup_dir, 'launch', 'rf2o.launch.py')
-        )
-    )
 
-    # IMU Filter Node
-    imu_filter_node = Node(
-        package='yahboom_bringup',
-        executable='imu_filter_node',
-        name='imu_filter_node',
-        output='screen'
-    )
 
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='false'),
-        description_launch,
-        imu_filter_node,
-        ekf_node,
-        rf2o_launch
+        description_launch,     # 1. robot URDF / TF tree
+        rf2o_launch,            # 2. laser odometry (/laser_odom)
+        imu_filter_node,        # 3. IMU pre-processing
+        ekf_node,               # 4. sensor fusion  — publishes /odom
     ])

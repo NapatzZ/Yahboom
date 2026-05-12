@@ -1,7 +1,7 @@
 ekf_filter_node:
   ros__parameters:
     use_sim_time: false
-    frequency: 10.0
+    frequency: 30.0
     two_d_mode: true
     publish_acceleration: false
     publish_tf: true
@@ -13,54 +13,62 @@ ekf_filter_node:
     world_frame: odom
 
     # --- ENCODER (Wheel Odometry) ---
+    # Wheels are free-floating / prone to slip — do NOT trust absolute position.
+    # Only vx (forward velocity) is used as a weak prior; rf2o is the primary odometry source.
     odom0: /odom_raw
-    # Trusting x, y, vx from wheels. Ignoring yaw and vyaw to mitigate wheel slip.
-    odom0_config: [true,  true,  false,
-                   false, false, false,
-                   true,  false, false,
-                   false, false, false,
-                   false, false, false]
+    odom0_config: [false, false, false,   # x, y, z        — disabled: slipping wheels corrupt absolute position
+                   false, false, false,   # roll, pitch, yaw
+                   true,  false, false,   # vx              — enabled as a weak prior for forward velocity only
+                   false, false, false,   # vroll, vpitch, vyaw
+                   false, false, false]   # ax, ay, az
     odom0_queue_size: 10
-    odom0_differential: false
-    odom0_relative: false
+    odom0_differential: true             # use pose delta, not absolute pose
+    odom0_relative: true                 # reset reference frame at startup
 
     # --- LASER ODOMETRY (rf2o) ---
+    # Most reliable source in this stack. Provides vx and vyaw.
+    # vy is disabled — differential-drive robots have no lateral velocity.
+    # Absolute position (x, y) is excluded here; AMCL handles global localization.
     odom1: /laser_odom
-    # Trusting vx, vy, vyaw (velocities) from laser to compensate for wheel slip during rotation.
-    odom1_config: [false, false, false,
-                   false, false, false,
-                   true,  true,  false,
-                   false, false, true,
-                   false, false, false]
+    odom1_config: [false, false, false,   # x, y, z        — excluded: AMCL owns global position
+                   false, false, false,   # roll, pitch, yaw
+                   true,  false, false,   # vx              — trusted
+                   false, false, true,    # vyaw            — trusted
+                   false, false, false]   # ax, ay, az
     odom1_queue_size: 10
     odom1_differential: false
     odom1_relative: false
 
     # --- IMU ---
+    # Marked trustless (high drift / bias from micro-ROS).
+    # Only angular rate (vyaw) is fused as a soft backup to smooth rotation
+    # between laser scan updates. Absolute yaw orientation is fully disabled.
     imu0: /imu/data_filtered
-    imu0_config: [false, false, false,
-                  false, false, true,
-                  false, false, false,
-                  false, false, true,
-                  false, false, false]
+    imu0_config: [false, false, false,   # x, y, z
+                  false, false, false,   # roll, pitch, yaw  — disabled: IMU yaw drifts too much
+                  false, false, false,   # vx, vy, vz
+                  false, false, true,    # vyaw              — soft backup angular rate
+                  false, false, false]   # ax, ay, az
     imu0_queue_size: 10
     imu0_differential: false
     imu0_relative: true
     imu0_remove_gravitational_acceleration: true
-    
-    # Process noise covariance tuning
-    process_noise_covariance: [0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.04, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0,
-                               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.015]
+
+    # Process noise covariance (15x15 diagonal matrix)
+    # State vector order: [x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az]
+    # Higher diagonal value = state is expected to change quickly = filter weights new measurements more.
+    process_noise_covariance: [0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.06, 0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025, 0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.025, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,   0.0,   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015]

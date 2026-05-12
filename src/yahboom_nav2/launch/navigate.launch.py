@@ -10,6 +10,7 @@ def generate_launch_description():
     yahboom_nav2_dir = get_package_share_directory('yahboom_nav2')
     nav2_dir = get_package_share_directory('nav2_bringup')
 
+    # Nav2 stack: AMCL localization + planners + controllers
     navigation_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(yahboom_nav2_dir, 'launch', 'bringup_launch.py')
@@ -17,12 +18,14 @@ def generate_launch_description():
         launch_arguments={'map': os.path.join(yahboom_nav2_dir, 'maps', 'map.yaml')}.items(),
     )
 
+    # RViz for visualization
     rviz_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(nav2_dir, 'launch', 'rviz_launch.py')
         )
     )
 
+    # Command server for high-level navigation requests
     command_server_node = Node(
         package='yahboom_nav2',
         executable='command_server',
@@ -31,7 +34,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        navigation_launch,
-        rviz_launch,
-        command_server_node,
+        navigation_launch,      # 1. Nav2 stack      (AMCL + planners)
+        rviz_launch,            # 2. visualization
+        command_server_node,    # 3. high-level command interface
     ])

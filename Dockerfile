@@ -17,16 +17,14 @@ RUN apt-get update && apt-get install -y \
     ros-humble-navigation2 \
     ros-humble-nav2-bringup \
     ros-humble-rmw-cyclonedds-cpp \
-    ros-humble-cv-bridge \
-    ros-humble-rqt-image-view \
     nano \
-    byobu \
+    byobu \ 
     iputils-ping \
     net-tools \
     python3-colcon-common-extensions \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies (includes mediapipe, pyyaml, opencv-python, etc.)
+# Install python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the source code into the container
@@ -45,10 +43,6 @@ RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build"
 COPY ./src/script/bashrc_template /root/.bashrc
 RUN sed -i 's|$HOME/Yahboom|/ros2_ws|g' /root/.bashrc && \
     sed -i 's|ip addr show wlp4s0 |hostname -I |g' /root/.bashrc
-
-# NOTE: Two Micro-ROS agents are required (run outside the container):
-#   Robot body:  docker run ... microros/micro-ros-agent:humble udp4 --port 8090
-#   Camera ESP32: docker run ... microros/micro-ros-agent:humble udp4 --port 9999
 
 # Set the default entrypoint
 COPY ./src/script/docker_entrypoint.sh /

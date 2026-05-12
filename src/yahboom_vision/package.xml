@@ -10,6 +10,7 @@
   <depend>cv_bridge</depend>
   <depend>sensor_msgs</depend>
   <depend>yahboom_interfaces</depend>
+  <depend>launch_ros</depend>
   <!-- mediapipe is installed via pip: pip install mediapipe -->
 
   <test_depend>ament_copyright</test_depend>

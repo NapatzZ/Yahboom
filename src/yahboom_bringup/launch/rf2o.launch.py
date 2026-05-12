@@ -12,11 +12,16 @@ def generate_launch_description():
             parameters=[{
                 'laser_scan_topic': '/scan',
                 'odom_topic': '/laser_odom',
-                'publish_tf': False, # EKF will handle TF
+                'publish_tf': False,         # EKF handles odom → base_footprint TF
                 'base_frame_id': 'base_footprint',
                 'odom_frame_id': 'odom',
-                'freq': 10.0,
-                'qos_reliability': 1 # 1 = RELIABLE, to match YB_Car_Node
+                # BUG-06 FIX: raised from 10.0 → 20.0 Hz.
+                # EKF runs at 30 Hz; a larger ratio means more predict-only cycles
+                # with no measurement update, which increases pose drift.
+                # 20 Hz gives a 1.5:1 ratio which is a reasonable balance.
+                # Note: rf2o cannot exceed the LiDAR's own scan rate.
+                'freq': 20.0,
+                'qos_reliability': 1         # 1 = RELIABLE, matches YB_Car_Node
             }],
         ),
     ])

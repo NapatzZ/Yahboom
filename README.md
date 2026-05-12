@@ -217,7 +217,7 @@ ESP32-CAM (WiFi)
       │  → publishes /espRos/esp32camera    ← set_camera.py (flip/mirror config)
       │
       ▼
- [start_Camera_computer.sh]  ← Micro-ROS Agent (must run first)
+ [start_camera_computer.sh]  ← Micro-ROS Agent (must run first)
       │
       ▼
  image_proc node
@@ -261,7 +261,7 @@ The camera ESP32 communicates via its **own Micro-ROS Agent on port 9999**.
 This must be running before any image data appears.
 
 ```bash
-bash src/script/start_Camera_computer.sh
+bash src/script/start_camera_computer.sh
 ```
 
 This runs:
@@ -272,12 +272,19 @@ docker run -it --rm -v /dev:/dev -v /dev/shm:/dev/shm --privileged --net=host \
 
 ---
 
-### Step 2: Start the Camera Stream
+### Step 2: Start Camera Stream + Human Detection
 
-Run `image_proc` to receive the compressed stream from the ESP32 and republish it as a raw ROS Image:
-
+**Option A (Recommended) – single launch file:**
 ```bash
+ros2 launch yahboom_vision vision.launch.py
+```
+
+**Option B – run separately:**
+```bash
+# Terminal 1
 ros2 run yahboom_vision image_proc
+# Terminal 2
+ros2 run yahboom_vision human_detection
 ```
 
 **Topics published:**
@@ -294,22 +301,7 @@ ros2 run rqt_image_view rqt_image_view /yahboom/vision/camera/debug
 
 ---
 
-### Step 3: Start the Human Detection Node
-
-In a separate terminal, start the detection service server:
-
-```bash
-ros2 run yahboom_vision human_detection
-```
-
-This node:
-- Continuously caches the latest frame from `/yahboom/vision/camera/image_raw`
-- Waits for service calls to `/yahboom_esp32/vision/human_detection`
-- Runs **MediaPipe Pose** on each frame when triggered
-
----
-
-### Step 4: Trigger Human Detection
+### Step 3: Trigger Human Detection
 
 Call the service with a timeout (in seconds). Returns as soon as a human is confirmed, or when the timeout expires.
 
@@ -370,7 +362,7 @@ else:
 
 | Symptom | Likely Cause | Fix |
 |---------|-------------|-----|
-| No image on `/espRos/esp32camera` | Camera agent not running | Run `start_Camera_computer.sh` first |
+| No image on `/espRos/esp32camera` | Camera agent not running | Run `start_camera_computer.sh` first |
 | `No frame received yet` warning | `image_proc` not running | Run `ros2 run yahboom_vision image_proc` |
 | Image upside-down / mirrored | Orientation not configured | Run `set_camera.py` once |
 | `detected` always `false` | Poor lighting / camera angle | Check debug topic with `rqt_image_view`, lower `LANDMARK_THRESHOLD` |

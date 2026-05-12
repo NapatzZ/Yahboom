@@ -9,12 +9,16 @@ Service type: yahboom_interfaces/srv/HumanDetection
 
 How it works
 ------------
-When the service is called, the node subscribes to the raw image topic
-(published by image_proc.py), runs MediaPipe Pose on each incoming frame,
-and counts how many of the 33 pose landmarks have visibility >= VISIBILITY_THRESHOLD.
-If the count reaches LANDMARK_THRESHOLD within the caller-specified timeout,
-``detected = True`` is returned immediately.  If the timeout expires first,
-``detected = False`` is returned.
+When the service is called, the node checks the latest cached frame from the
+image_proc topic. It runs MediaPipe Pose and counts visible pose landmarks.
+If LANDMARK_THRESHOLD is met within timeout, detected=True is returned.
+
+Threading model
+---------------
+A MultiThreadedExecutor is REQUIRED so the image subscriber can update
+self._frame while the service callback blocks in its polling loop.
+The two callbacks are in the same ReentrantCallbackGroup which lets them
+run concurrently on different threads.
 
 Topics subscribed
 -----------------
@@ -79,6 +83,11 @@ class HumanDetectionNode(Node):
         self._frame = None
         self._frame_lock = threading.Lock()
 
+        # BUG-03 FIX: detection_event lets the service callback wake up
+        # immediately when the image subscriber processes a new frame,
+        # avoiding a tight 50 ms sleep loop.
+        self._detection_event = threading.Event()
+
         # Image subscriber (always running so frames are warm when service fires)
         self._image_sub = self.create_subscription(
             Image,
@@ -105,11 +114,13 @@ class HumanDetectionNode(Node):
     # ── Subscriber ──────────────────────────────────────────────────────────────
 
     def _image_callback(self, msg: Image):
-        """Cache the latest frame (converted to BGR numpy array)."""
+        """Cache the latest frame and signal the service callback."""
         try:
             frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             with self._frame_lock:
                 self._frame = frame
+            # BUG-03 FIX: notify service callback that a fresh frame is ready
+            self._detection_event.set()
         except Exception as exc:
             self.get_logger().warn(f'cv_bridge error: {exc}')
 
@@ -138,45 +149,67 @@ class HumanDetectionNode(Node):
     def _detect_callback(self, request: HumanDetection.Request,
                          response: HumanDetection.Response):
         """
-        Poll frames for up to *timeout* seconds.
-        Returns detected=True as soon as a human is confirmed,
-        or detected=False when the timeout expires.
+        Wait up to *timeout* seconds for a human to be detected.
+
+        Uses threading.Event instead of a fixed sleep loop:
+        - The service callback blocks on _detection_event.wait()
+        - Each time the image subscriber delivers a new frame it calls
+          _detection_event.set(), waking this callback immediately.
+        - This is safe because MultiThreadedExecutor runs both callbacks
+          on separate threads.
         """
         timeout = float(request.timeout) if request.timeout > 0 else DEFAULT_TIMEOUT_SEC
         deadline = time.monotonic() + timeout
-        poll_interval = 0.05  # 20 Hz polling
 
         self.get_logger().info(
             f'HumanDetection requested – timeout: {timeout:.1f} s')
 
         detected = False
         while time.monotonic() < deadline:
+            remaining = deadline - time.monotonic()
+
+            # BUG-03 FIX: block until a new frame arrives (or timeout expires)
+            # This avoids spinning at 20 Hz when no frames are incoming.
+            self._detection_event.clear()
+            got_frame = self._detection_event.wait(timeout=min(remaining, 1.0))
+
+            if not got_frame:
+                self.get_logger().warn(
+                    'No frame received – is image_proc running?',
+                    throttle_duration_sec=2.0)
+                continue
+
             with self._frame_lock:
                 frame = self._frame.copy() if self._frame is not None else None
 
-            if frame is not None:
-                if self._is_human_in_frame(frame):
-                    detected = True
-                    break
-            else:
-                self.get_logger().warn(
-                    'No frame received yet – is image_proc running?',
-                    throttle_duration_sec=2.0)
-
-            time.sleep(poll_interval)
+            if frame is not None and self._is_human_in_frame(frame):
+                detected = True
+                break
 
         response.detected = detected
         self.get_logger().info(
             f'HumanDetection result: detected={detected}')
         return response
 
+    # ── BUG-11 FIX: clean up MediaPipe resources on shutdown ────────────────────
+
+    def destroy_node(self):
+        """Release MediaPipe Pose resources before the node is destroyed."""
+        try:
+            self._mp_pose.close()
+            self.get_logger().info('MediaPipe Pose closed.')
+        except Exception:
+            pass
+        super().destroy_node()
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = HumanDetectionNode()
 
-    # MultiThreadedExecutor so the image subscriber keeps updating
-    # while the service callback is blocked in its polling loop
+    # MultiThreadedExecutor is REQUIRED:
+    # the image subscriber must keep updating self._frame while the
+    # service callback is blocked waiting on _detection_event.
     executor = MultiThreadedExecutor()
     executor.add_node(node)
 

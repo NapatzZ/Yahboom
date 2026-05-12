@@ -3,12 +3,14 @@ import rclpy.time
 import math
 import os
 import yaml
+import threading
 
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
+from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from nav2_msgs.action import NavigateToPose
@@ -17,6 +19,9 @@ from ament_index_python.packages import get_package_share_directory
 
 # Import custom services
 from yahboom_interfaces.srv import SaveLocation, MoveDistance, RotateDegree, NavToLocation
+
+# Default navigation timeout when caller passes timeout <= 0
+NAV_DEFAULT_TIMEOUT_SEC: float = 30.0
 
 
 class CommandServerNode(Node):
@@ -294,12 +299,29 @@ class CommandServerNode(Node):
         return response
 
     def nav_to_location_callback(self, request, response):
-        """Send a Nav2 NavigateToPose goal to a previously saved location."""
+        """
+        Navigate to a saved location and wait for the result.
+
+        BUG-04 FIX: Previously this was fire-and-forget — it returned
+        success=True the moment the goal was sent, regardless of whether
+        the robot actually reached the destination.
+
+        Now the service blocks until one of three outcomes:
+          • Nav2 reports STATUS_SUCCEEDED  → success=True
+          • Nav2 reports any failure status → success=False
+          • Caller-specified timeout expires → success=False (goal cancelled)
+
+        Threading model: threading.Event is used so the odom subscriber
+        and other callbacks keep running on separate executor threads
+        while this callback waits for the goal result.
+        """
         location_name = request.location_name
         if not location_name:
             response.success = False
             response.message = 'Location name cannot be empty.'
             return response
+
+        timeout = float(request.timeout) if request.timeout > 0 else NAV_DEFAULT_TIMEOUT_SEC
 
         # Load saved locations
         if not os.path.exists(self.save_path):
@@ -335,19 +357,59 @@ class CommandServerNode(Node):
         goal_msg.pose.header.stamp    = self.get_clock().now().to_msg()
         goal_msg.pose.pose.position.x = x
         goal_msg.pose.pose.position.y = y
-        # Convert yaw → quaternion (rotation about Z)
         goal_msg.pose.pose.orientation.z = math.sin(yaw / 2.0)
         goal_msg.pose.pose.orientation.w = math.cos(yaw / 2.0)
 
-        # Fire-and-forget: send goal and return immediately so the service
-        # doesn't block other callbacks while Nav2 is executing.
-        self.nav_to_pose_client.send_goal_async(goal_msg)
+        # ── Blocking wait via threading.Event ──────────────────────────────
+        # Both callbacks below are invoked by the executor on other threads,
+        # so this service-callback thread can safely block on result_event.
+        result_event  = threading.Event()
+        result_holder = {}   # {'success': bool, 'message': str}
 
-        response.success = True
-        response.message = (
-            f"Navigation to '{location_name}' started "
-            f"(X:{x:.2f} Y:{y:.2f} Yaw:{math.degrees(yaw):.1f}°).")
-        self.get_logger().info(response.message)
+        def _result_cb(result_future):
+            """Called when Nav2 finishes (success or failure)."""
+            status = result_future.result().status
+            succeeded = (status == GoalStatus.STATUS_SUCCEEDED)
+            result_holder['success'] = succeeded
+            result_holder['message'] = (
+                f"Navigation {'succeeded' if succeeded else 'failed'} "
+                f"(Nav2 status={status}).")
+            result_event.set()
+
+        def _goal_response_cb(goal_future):
+            """Called when Nav2 accepts or rejects the goal."""
+            handle = goal_future.result()
+            if not handle.accepted:
+                result_holder['success'] = False
+                result_holder['message'] = 'Goal rejected by Nav2.'
+                result_event.set()
+                return
+            # Goal accepted — attach result callback
+            handle.get_result_async().add_done_callback(_result_cb)
+
+        send_future = self.nav_to_pose_client.send_goal_async(goal_msg)
+        send_future.add_done_callback(_goal_response_cb)
+
+        self.get_logger().info(
+            f"Navigating to '{location_name}' "
+            f"(X:{x:.2f} Y:{y:.2f} Yaw:{math.degrees(yaw):.1f}°) "
+            f"— timeout {timeout:.0f}s")
+
+        # Block until Nav2 responds or timeout expires
+        finished = result_event.wait(timeout=timeout)
+
+        if finished:
+            response.success = result_holder.get('success', False)
+            response.message = result_holder.get('message', 'Unknown result.')
+        else:
+            response.success = False
+            response.message = (
+                f"Navigation to '{location_name}' timed out after {timeout:.0f}s. "
+                f"Goal was cancelled.")
+            self.get_logger().warn(response.message)
+
+        self.get_logger().info(
+            f'nav_to_location result: success={response.success}, {response.message}')
         return response
 
 
