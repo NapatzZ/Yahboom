@@ -1,7 +1,4 @@
-# SaveLocation.srv
-# Request: The name of the location to save
 string location_name
 ---
-# Response: Success status and message
 bool success
 string message

@@ -17,7 +17,6 @@ class YAHBOOM_VISION(Node):
         self.get_logger().info("Node is initializing....")
 
         self.frame = None
-        # BUG-07 FIX: dirty flag — only publish when a NEW frame has arrived
         self._frame_updated = False
 
         self.bridge = CvBridge()
@@ -38,10 +37,6 @@ class YAHBOOM_VISION(Node):
     def handleTopic(self, msg):
         frame = self.bridge.compressed_imgmsg_to_cv2(msg)
 
-        # BUG-02 FIX: removed cv2.resize(frame, (1920, 1080)).
-        # ESP32-CAM native resolution is ~640×480; upscaling wastes CPU and
-        # does not add information. MediaPipe receives the frame as-is which
-        # is faster and produces the same detection quality.
 
         if IMSHOW:
             cv2.imshow('frame', frame)
@@ -53,7 +48,6 @@ class YAHBOOM_VISION(Node):
     # ── Publishers ──────────────────────────────────────────────────────────────
 
     def image_publisher(self, mode, frame=None):
-        # BUG-07 FIX: skip publish if no new frame has arrived since last publish
         if self.frame is None:
             return
         if mode == "raw_image" and not self._frame_updated:

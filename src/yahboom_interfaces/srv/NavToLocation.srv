@@ -1,10 +1,5 @@
-# NavToLocation.srv
-# Request: The name of the saved location to navigate to
 string location_name
-# Timeout in seconds to wait for the robot to reach the goal.
-# 0.0 = use server default (30 s). Negative values are treated as 0.
 float64 timeout
 ---
-# Response: True if robot reached the goal within timeout, False otherwise
 bool success
 string message
