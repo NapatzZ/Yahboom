@@ -112,16 +112,42 @@ ros2 launch yahboom_bringup native_bringup.launch.py
 ros2 launch yahboom_nav2 online_async_launch.py
 
 # Terminal B — drive robot to map the area
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+ros2 launch yahboom_teleop teleop.launch.py
 ```
 
-### 4 — Save Map
+### 4 — Teleoperation
+
+```bash
+ros2 launch yahboom_teleop teleop.launch.py
+```
+
+Focus the terminal window, then use keyboard to drive:
+
+```
+        i
+   j    k    l
+        ,
+
+i / ,   — forward / backward
+j / l   — rotate left / right
+k       — stop
+u/o/m/. — diagonal
+q / z   — increase / decrease all speeds
+w / x   — increase / decrease linear speed
+e / c   — increase / decrease angular speed
+```
+
+> Velocity commands go through a smoother (`cmd_vel_raw` → smoother → `cmd_vel`) to prevent jerky motion.
+
+---
+
+### 5 — Save Map
 ```bash
 ros2 run yahboom_nav2 map_saver
 ```
 Saved to `src/yahboom_nav2/maps/map.yaml` and `map.pgm`.
 
-### 5 — Navigation
+### 6 — Navigation
 ```bash
 ros2 launch yahboom_nav2 navigate.launch.py
 ```
