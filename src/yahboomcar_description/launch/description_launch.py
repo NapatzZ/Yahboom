@@ -27,22 +27,16 @@ def generate_launch_description():
         executable='joint_state_publisher'
     )
 
+    
     tf_base_footprint_to_base_link = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         arguments=['0', '0', '0.05', '0.0', '0.0', '0.0', 'base_footprint', 'base_link'],
-    )
-
-    tf_radar_link_to_lidar_link = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments=['0', '0', '0.0', '0.0', '0.0', '0.0', 'radar_Link', 'laser_frame'],
     )
     
     return LaunchDescription([
         model_arg,
         joint_state_publisher_node,
         robot_state_publisher_node,
-        tf_base_footprint_to_base_link,
-        tf_radar_link_to_lidar_link
+        tf_base_footprint_to_base_link
     ])

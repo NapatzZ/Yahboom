@@ -1,3 +1,6 @@
+# Copy micro-ros-agent from the official image
+FROM --platform=linux/amd64 microros/micro-ros-agent:humble AS micro_ros_agent
+
 FROM osrf/ros:humble-desktop
 
 # Set non-interactive to avoid timezone prompts during apt installs
@@ -17,12 +20,23 @@ RUN apt-get update && apt-get install -y \
     ros-humble-navigation2 \
     ros-humble-nav2-bringup \
     ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-joint-state-publisher \
+    ros-humble-joint-state-publisher-gui \
+    ros-humble-xacro \
+    xvfb \
+    x11vnc \
+    novnc \
+    websockify \
+    libgl1-mesa-dri \
     nano \
-    byobu \ 
+    byobu \
     iputils-ping \
     net-tools \
     python3-colcon-common-extensions \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy micro-ros-agent workspace from the official image
+COPY --from=micro_ros_agent /uros_ws/install /uros_ws/install
 
 # Install python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt

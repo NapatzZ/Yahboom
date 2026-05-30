@@ -473,18 +473,38 @@ class MicroROS_Robot():
         print("imu yaw pid parm:", imu_pid_parm)
 
 def get_active_wifi_info():
-    """Extracts the active WiFi SSID and Password on Ubuntu using nmcli without sudo."""
+    """Extracts the active WiFi SSID and password, supporting both Linux (nmcli) and macOS."""
+    # Linux: nmcli
     try:
         conn_cmd = "nmcli -t -f NAME,TYPE connection show --active | grep 802-11-wireless | cut -d: -f1"
-        conn_name = subprocess.check_output(conn_cmd, shell=True).decode('utf-8').strip()
-        if not conn_name:
-            return None, None
-            
-        pwd_cmd = f"nmcli -s -g 802-11-wireless-security.psk connection show '{conn_name}'"
-        pwd = subprocess.check_output(pwd_cmd, shell=True).decode('utf-8').strip()
-        return conn_name, pwd
+        conn_name = subprocess.check_output(conn_cmd, shell=True, stderr=subprocess.DEVNULL).decode('utf-8').strip()
+        if conn_name:
+            pwd_cmd = f"nmcli -s -g 802-11-wireless-security.psk connection show '{conn_name}'"
+            pwd = subprocess.check_output(pwd_cmd, shell=True, stderr=subprocess.DEVNULL).decode('utf-8').strip()
+            return conn_name, pwd
     except Exception:
-        return None, None
+        pass
+
+    # macOS: airport + security keychain
+    try:
+        airport = ('/System/Library/PrivateFrameworks/Apple80211.framework'
+                   '/Versions/Current/Resources/airport')
+        raw = subprocess.check_output([airport, '-I'], stderr=subprocess.DEVNULL).decode('utf-8')
+        ssid = None
+        for line in raw.splitlines():
+            if ' SSID:' in line:
+                ssid = line.split('SSID:', 1)[1].strip()
+                break
+        if ssid:
+            pwd = subprocess.check_output(
+                ['security', 'find-generic-password', '-D', 'AirPort network password', '-a', ssid, '-w'],
+                stderr=subprocess.DEVNULL
+            ).decode('utf-8').strip()
+            return ssid, pwd
+    except Exception:
+        pass
+
+    return None, None
 
 def get_local_ip():
     """Dynamically finds the computer's local IP address."""
@@ -498,7 +518,7 @@ def get_local_ip():
         return [192, 168, 1, 100]
 
 if __name__ == '__main__':
-    robot = MicroROS_Robot(port='/dev/ttyUSB0', debug=False)
+    robot = MicroROS_Robot(port='/dev/tty.usbserial-0001', debug=False)
     print("Rebooting Device, Please wait.")
     robot.reboot_device()
 
@@ -511,7 +531,7 @@ if __name__ == '__main__':
         robot.set_wifi_config(ssid, passwd)
     else:
         print("Warning: Could not auto-detect WiFi. Using fallback values.")
-        robot.set_wifi_config("skuba_net", "Skubapassword")
+        robot.set_wifi_config("Napat", "turtlebot")
 
     print(f"Auto-detected Agent IP: {local_ip}")
     robot.set_udp_config(local_ip, 8090)
@@ -529,12 +549,8 @@ if __name__ == '__main__':
 
     time.sleep(.1)
     robot.print_all_firmware_parm()
-    print("Please reboot the device to take effect, if you change some device config.")
 
-    try:
-        while False:
-            time.sleep(1)
-    except:
-        pass
-    time.sleep(.1)
+    print("\nRebooting device to apply config...")
+    robot.reboot_device()
+    print("Done. Robot is rebooting — wait ~10s for it to join WiFi, then check the agent.")
     del robot

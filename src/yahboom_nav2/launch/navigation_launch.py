@@ -217,7 +217,7 @@ def generate_launch_description():
                 remappings=remappings),
             ComposableNode(
                 package='nav2_behaviors',
-                plugin='behavior_server::BehaviorServer',
+                plugin='nav2_behaviors::BehaviorServer',
                 name='behavior_server',
                 parameters=[configured_params],
                 remappings=remappings),

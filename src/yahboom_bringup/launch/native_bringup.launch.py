@@ -52,12 +52,22 @@ def generate_launch_description():
         parameters=[ekf_config_path, {'use_sim_time': use_sim_time}]
     )
 
-
+    # Bridge: firmware publishes /scan with frame_id='laser_frame' but URDF names
+    # the LiDAR link 'radar_Link'. This static TF makes slam_toolbox able to look
+    # up the laser pose in the robot frame (z offset from radar_Joint in URDF).
+    laser_frame_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='laser_frame_to_base_link',
+        arguments=['0', '0', '0.079', '0', '0', '0', 'base_link', 'laser_frame'],
+        output='screen',
+    )
 
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         description_launch,     # 1. robot URDF / TF tree
-        rf2o_launch,            # 2. laser odometry (/laser_odom)
-        imu_filter_node,        # 3. IMU pre-processing
-        ekf_node,               # 4. sensor fusion  — publishes /odom
+        laser_frame_tf,         # 2. base_link -> laser_frame (firmware frame name)
+        rf2o_launch,            # 3. laser odometry (/laser_odom)
+        imu_filter_node,        # 4. IMU pre-processing
+        ekf_node,               # 5. sensor fusion  — publishes /odom
     ])

@@ -123,7 +123,7 @@ alias GET-IDF='source ~/esp/esp-idf/export.sh'
 export ROS_DOMAIN_ID=20
 echo -e "MY_DOMAIN_ID: \033[32m$ROS_DOMAIN_ID\033[0m"
 
-IP_ADDRESS=$(ip addr show wlp4s0 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*)
+IP_ADDRESS=$(hostname -I | awk '{print $1}')
 echo -e "MY_IP: \033[32m$IP_ADDRESS\033[0m"
 
 echo "-----------------------"

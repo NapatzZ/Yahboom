@@ -21,7 +21,8 @@ def generate_launch_description():
                 # 20 Hz gives a 1.5:1 ratio which is a reasonable balance.
                 # Note: rf2o cannot exceed the LiDAR's own scan rate.
                 'freq': 20.0,
-                'qos_reliability': 1         # 1 = RELIABLE, matches YB_Car_Node
+                'qos_reliability': 1,        # 1 = RELIABLE, matches YB_Car_Node
+                'init_pose_from_topic': ''   # skip waiting for ground truth pose on real robot
             }],
         ),
     ])
